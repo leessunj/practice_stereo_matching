@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
+
 import math
 
 def matching_for(im, im2, index=16):
@@ -74,10 +75,10 @@ def matching_adaptive_weight(im,im2,block_size=3,max_d=12):
     def gpq(p, q):
         return (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2
 
-    def weight(im, p, q, rc=7, rp=36):
+    def weight(im, p, q, rc=7, rp=36): #rc가 작아지면 컬러 차이가 크면 차이 더 큼.
         if (p, q) in w_dp:
             return w_dp[p, q]
-        w = math.exp(-(cpq(im, p, q) / rc + gpq(p, q) / rp)) * 5
+        w = math.exp(-(cpq(im, p, q) / rc + gpq(p, q) / rp)) * 255
         w_dp[(p, q)] = w
         # print(p,q,w)
         return w
@@ -90,6 +91,43 @@ def matching_adaptive_weight(im,im2,block_size=3,max_d=12):
         return weight(im1, p1, q1) * weight(im2, p2, q2)
 
 
+    def check_weight(test):
+        ta = test[129:178, 334:383, ]  # 49 49
+        tb = test[52:93, 121:162, ]  # 41 41
+        tc = test[24:65, 302:343, ]  # 41 41
+        td = test[160:201, 303:344]  # 41 41
+        testers=[ta,tb,tc,td]
+        index=1;
+        for t in testers:
+            height, width,c=t.shape
+            center=(height//2,width//2)
+            wgt=[]
+            print(type(wgt),wgt)
+            axs = plt.figure().subplots()
+            axs.imshow(t)
+            for i in range(height):
+                for j in range(width):
+                    wgt.append(round(weight(t,center,(i,j),rp=300,rc=80)))
+                    print(wgt[-1],end=' ')
+                print()
+            wgt=np.array(wgt,dtype='uint8')
+            wgt.shape=(height,width)
+            print(wgt.shape,np.max(wgt),np.min(wgt),wgt.dtype)
+
+            # ax = plt.figure().subplots()
+            # ax.imshow(wgt)
+            # #plt.imshow(wgt)
+            # plt.show()
+            cv2.imwrite("test{}.png".format(index), cv2.cvtColor(t,cv2.COLOR_LAB2BGR))
+            cv2.imwrite("test_weight{}.png".format(index), wgt)
+            cv2.namedWindow('finalImg', cv2.WINDOW_NORMAL)
+            cv2.namedWindow('original', cv2.WINDOW_NORMAL)
+            cv2.imshow("original", cv2.cvtColor(t, cv2.COLOR_LAB2BGR))
+            cv2.imshow("finalImg", wgt)
+            cv2.waitKey(0)
+            w_dp.clear()
+            index+=1
+    # check_weight(im)
     d = []
     for i in range(block_size-1, h):#(block_size, h):
         for j in range(block_size-1, w):
@@ -137,6 +175,7 @@ def save_disparity(im,filename):
     M=np.max(im)
     if M!=1.0:
         im=im/M
+
     im = np.clip(im * 255, a_min=0, a_max=255).astype('uint8')
     cv2.imwrite("{}.png".format(filename), im)
 
@@ -158,12 +197,23 @@ if __name__ == '__main__':
     im2 = cv2.imread('tsukuba/scene1.row3.col2.ppm')  # right
     igt = cv2.imread('tsukuba/truedisp.row3.col3.pgm',0)
     #disparity=matching_for(cv2.cvtColor(im,cv2.COLOR_BGR2GRAY), cv2.cvtColor(im2,cv2.COLOR_BGR2GRAY))
-    disparity=matching_adaptive_weight(im2, im)
-    save_disparity(disparity,"test")
+    #disparity=
+    matching_adaptive_weight(im2, im)
+    #save_disparity(disparity,"test")
     #cv2.imshow("image1", im)
     #cv2.imshow("2", im2)
     #cv2.imshow("ds", disparity)
     #plt.imshow(igt,'igt')
-    plt.imshow(disparity,'gray')
-    cv2.waitKey(0)
-    plt.show()
+    #plt.imshow(disparity,'gray')
+
+
+    # test=cv2.cvtColor(im,cv2.COLOR_BGR2RGB)
+    # ta=test[126:175,334:383,] #49 49
+    # tb=test[52:93,124:165,] #41 41
+    # tc=test[24:65,302:343,] #41 41
+    # td=test[160:201,313:354] #41 41
+    # print(tb.shape)
+    # ax=plt.figure().subplots()
+    # ax.imshow(tb)
+    # #cv2.waitKey(0)
+    # plt.show()
