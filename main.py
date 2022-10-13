@@ -30,7 +30,10 @@ def matching_bm(im, im2):
     disparity = stereo.compute(im, im2)
     return disparity
 
-def matching_block(im, im2, block_size=3, index=12):
+def matching_block(im, im2, block_size=3, index=12): #left+d==right
+    if len(im.shape)>2:
+        im=cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)
+        im2=cv2.cvtColor(im2,cv2.COLOR_BGR2GRAY)
     h, w = im.shape  # 288 384
     d = []
     for i in range(block_size-1, h):
@@ -50,6 +53,34 @@ def matching_block(im, im2, block_size=3, index=12):
                 # print((im[i-block_size:i,j-block_size:j]-im2[i-block_size:i,j-block_size+k:j+k]))
             d.append(cd.index(min(cd)))
     disparity = np.array(d)
+    disparity=disparity/np.max(disparity)
+    disparity.shape = (h - block_size+1, w - block_size+1)
+    return disparity
+
+def matching_block_rl(im, im2, block_size=3, index=12): #left==right+d
+    if len(im.shape)>2:
+        im=cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)
+        im2=cv2.cvtColor(im2,cv2.COLOR_BGR2GRAY)
+    h, w = im.shape  # 288 384
+    d = []
+    for i in range(block_size-1, h):
+        for j in range(block_size-1, w):
+            cd = []
+            for k in range(1, index):
+                sad = 0
+                for x in range(j - block_size+1, j):
+                    for y in range(i - block_size+1, i):
+                        if x - k < 0:
+                            break
+                        sad += abs(int(im2[y][x]) - int(im[y][x - k]))
+                        # sad += (int(im2[y][x]) - int(im[y][x + k]))**2 #SSD
+                cd.append(sad)
+                # print(int(im[i-block_size:i,j-block_size:j]))
+                # print(im2[i-block_size:i,j-block_size+k:j+k])
+                # print((im[i-block_size:i,j-block_size:j]-im2[i-block_size:i,j-block_size+k:j+k]))
+            d.append(cd.index(min(cd)))
+    disparity = np.array(d)
+    disparity=disparity/np.max(disparity)
     disparity.shape = (h - block_size+1, w - block_size+1)
     return disparity
 
@@ -196,9 +227,15 @@ if __name__ == '__main__':
     im = cv2.imread('tsukuba/scene1.row3.col1.ppm')  # left
     im2 = cv2.imread('tsukuba/scene1.row3.col2.ppm')  # right
     igt = cv2.imread('tsukuba/truedisp.row3.col3.pgm',0)
+    disl=matching_block(im,im2,block_size=5)
+    disr=matching_block_rl(im2,im,block_size=5)
+    print(disl.dtype,np.max(disl),np.min(disl))
+    print(disr.dtype,np.max(disr),np.min(disr))
+    cv2.imshow('l',disl)
+    cv2.imshow('r',disr)
+    cv2.imshow('out',disl-disr)
     #disparity=matching_for(cv2.cvtColor(im,cv2.COLOR_BGR2GRAY), cv2.cvtColor(im2,cv2.COLOR_BGR2GRAY))
-    #disparity=
-    matching_adaptive_weight(im2, im)
+    #disparity=matching_adaptive_weight(im2, im,block_size=33)
     #save_disparity(disparity,"test")
     #cv2.imshow("image1", im)
     #cv2.imshow("2", im2)
@@ -207,13 +244,5 @@ if __name__ == '__main__':
     #plt.imshow(disparity,'gray')
 
 
-    # test=cv2.cvtColor(im,cv2.COLOR_BGR2RGB)
-    # ta=test[126:175,334:383,] #49 49
-    # tb=test[52:93,124:165,] #41 41
-    # tc=test[24:65,302:343,] #41 41
-    # td=test[160:201,313:354] #41 41
-    # print(tb.shape)
-    # ax=plt.figure().subplots()
-    # ax.imshow(tb)
-    # #cv2.waitKey(0)
-    # plt.show()
+    cv2.waitKey(0)
+    plt.show()
