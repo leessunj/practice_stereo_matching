@@ -15,6 +15,9 @@ class Vertex:
     def get_id(self):
         return self.id
 
+    def get_degree(self):
+        return len(self.adjacent)
+
     def get_weight(self, neighbor):
         return self.adjacent[neighbor]
 
@@ -103,7 +106,7 @@ im = cv2.imread('tsukuba/scene1.row3.col1.ppm',0)  # left
 im2 = cv2.imread('tsukuba/scene1.row3.col2.ppm',0)  # right
 im_graph = Graph()
 im2_graph = Graph()
-height,width=im.shape
+height,width=im.shape # 288 * 384 = 110592
 #make image to graph
 for i in range(height-1):
     for j in range(width-1):
@@ -113,12 +116,17 @@ for i in range(height-1):
     im_graph.add_edge((i, -1), (i+1, -1), cost=abs(int(im[i][-1]) - int(im[i+1][-1])))
 for j in range(width-1):
         im_graph.add_edge((-1,j),(-1,j+1),cost=abs(int(im[-1][j])-int(im[-1][j+1])))
-#len(edges)=2*(height-1)*(width-1)+height+width-2
+#len(edges)=2*(height-1)*(width-1)+height+width-2= 220512
 
-
-edges=im_graph.get_edges()
-print(type(edges),edges[:3],edges[0],type(edges[0]),im_graph.get_weight(edges[0]))
+#make MST from graph
 im_graph.weight_sort()
 edges=im_graph.get_edges()
-for e in edges[:3]:
-    print(type(e),e,im_graph.get_weight(e))
+n=height*width
+print(edges[0],im_graph.get_weight(edges[0]))
+while len(edges)>n:
+    e=edges[0]
+    if im_graph.get_vertex(e[0]).get_degree()>1 and im_graph.get_vertex(e[1]).get_degree()>1:
+        im_graph.remove_edge(e[0],e[1])
+    edges=im_graph.get_edges()
+print('after',edges[0],im_graph.get_weight(edges[0]))
+#말도 안됨. 36분동안 실행안되는 거는 알고리즘에 문제 있다
