@@ -82,7 +82,7 @@ class Graph:
         del self.vert_dict[v]
 
     def get_edges(self):
-        return self.edge_dict.keys()
+        return list(self.edge_dict.keys())
 
     def get_weight(self,e):
         if e in self.edge_dict:
@@ -91,53 +91,34 @@ class Graph:
             return None
 
     def weight_sort(self):
-        self.edge_dict=sorted(self.edge_dict, key = lambda item: item[1], reverse = True)
+        if type(self.edge_dict)!=dict:
+            print('not dictionary it is',type(self.edge_dict))
+        self.edge_dict=dict(sorted(self.edge_dict.items(), key = lambda item: item[1], reverse = True)) #sorted의 결과는 list이다!
+        # print(self.edge_dict)
 
 import cv2
+import networkx as nx
 
 im = cv2.imread('tsukuba/scene1.row3.col1.ppm',0)  # left
 im2 = cv2.imread('tsukuba/scene1.row3.col2.ppm',0)  # right
 im_graph = Graph()
 im2_graph = Graph()
 height,width=im.shape
-
+#make image to graph
 for i in range(height-1):
     for j in range(width-1):
         im_graph.add_edge((i,j),(i,j+1),cost=abs(int(im[i][j])-int(im[i][j+1])))
         im_graph.add_edge((i,j),(i+1,j),cost=abs(int(im[i][j])-int(im[i+1][j])))
+for i in range(height-1):
+    im_graph.add_edge((i, -1), (i+1, -1), cost=abs(int(im[i][-1]) - int(im[i+1][-1])))
+for j in range(width-1):
+        im_graph.add_edge((-1,j),(-1,j+1),cost=abs(int(im[-1][j])-int(im[-1][j+1])))
+#len(edges)=2*(height-1)*(width-1)+height+width-2
+
+
+edges=im_graph.get_edges()
+print(type(edges),edges[:3],edges[0],type(edges[0]),im_graph.get_weight(edges[0]))
 im_graph.weight_sort()
-#왜 add할 때까지만 해도 잘 있던 딕셔너리가 사라지는지 모르겠음;;왜 리스트가 되지?? 어디서부터 잘못된 것임??
-#edges=im_graph.get_edges()
-#print(edges[:3],type(edges),im_graph.get_weight(edges[0]),im_graph.get_weight(edges[1]))
-
-
-
-# #make MST
-# for element in im_graph
-#
-# g.add_vertex('a')
-# g.add_vertex('b')
-# g.add_vertex('c')
-# g.add_vertex('d')
-# g.add_vertex('e')
-# g.add_vertex('f')
-#
-# g.add_edge('a', 'b', 7)
-# g.add_edge('a', 'c', 9)
-# g.add_edge('a', 'f', 14)
-# g.add_edge('b', 'c', 10)
-# g.add_edge('b', 'd', 15)
-# g.add_edge('c', 'd', 11)
-# g.add_edge('c', 'f', 2)
-# g.add_edge('d', 'e', 6)
-# g.add_edge('e', 'f', 9)
-# g.remove_vertex('a')
-# g.remove_vertex('a')
-# for v in g:
-#     for w in v.get_connections():
-#         vid = v.get_id()
-#         wid = w.get_id()
-#         print('( %s , %s, %3d)'  % ( vid, wid, v.get_weight(w)))
-#
-# for v in g:
-#     print( 'g.vert_dict[%s]=%s' %(v.get_id(), g.vert_dict[v.get_id()]))
+edges=im_graph.get_edges()
+for e in edges[:3]:
+    print(type(e),e,im_graph.get_weight(e))

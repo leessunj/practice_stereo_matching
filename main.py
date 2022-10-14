@@ -227,8 +227,8 @@ if __name__ == '__main__':
     im = cv2.imread('tsukuba/scene1.row3.col1.ppm')  # left
     im2 = cv2.imread('tsukuba/scene1.row3.col2.ppm')  # right
     igt = cv2.imread('tsukuba/truedisp.row3.col3.pgm',0)
-    disl=matching_block(im,im2,block_size=5)
-    disr=matching_block_rl(im2,im,block_size=5)
+    disl=matching_block(im,im2,block_size=9)
+    disr=matching_block_rl(im2,im,block_size=9)
     print(disl.dtype,np.max(disl),np.min(disl))
     print(disr.dtype,np.max(disr),np.min(disr))
     cv2.imshow('l',disl)
