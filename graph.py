@@ -99,6 +99,13 @@ class Graph:
         self.edge_dict=dict(sorted(self.edge_dict.items(), key = lambda item: item[1], reverse = reverse)) #sorted의 결과는 list이다!
         # print(self.edge_dict)
 
+    def get_MST(self):
+        edges=self.edge_dict
+        e=list(edges.keys())[-1]
+        print("it's",e)
+
+
+
 import cv2
 import networkx as nx
 
@@ -120,11 +127,34 @@ for j in range(width-1):
 
 
 #make MST from graph
+mst=Graph()
 im_graph.weight_sort(True)
+im_graph.get_MST()
 edges=im_graph.get_edges()
 n=height*width
 e=edges.pop(-1)
-print(edges[0],im_graph.get_weight(edges[0]),edges[-1],im_graph.get_weight(edges[-1]),e,im_graph.get_weight(e))
+v1=im_graph.get_vertex(e[0])
+v2=im_graph.get_vertex(e[1])
+mst.add_edge(v1,v2,im_graph.get_weight(e))
+candidates=[]
+for k in v1.get_connections():
+    candidates.append((v1.get_id(),k.get_id()))
+for k in v2.get_connections():
+    candidates.append((v2.get_id(),k.get_id()))
+print(candidates,len(candidates))
+
+def get_min_weight(g,subjects):
+    min_w=subjects[0]
+    min_i=0
+    for i in range(1,len(subjects)):
+        w=g.get_weight(subjects[i])
+        if w<min_w:
+            min_w=w
+            min_i=i
+        elif min_w==0:
+            return 0,min_i
+    return min_w,min_i
+
 
 # while len(edges)>n:
 #     e=edges[0]
