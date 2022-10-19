@@ -93,10 +93,10 @@ class Graph:
         else:
             return None
 
-    def weight_sort(self):
+    def weight_sort(self,reverse=False):
         if type(self.edge_dict)!=dict:
             print('not dictionary it is',type(self.edge_dict))
-        self.edge_dict=dict(sorted(self.edge_dict.items(), key = lambda item: item[1], reverse = True)) #sorted의 결과는 list이다!
+        self.edge_dict=dict(sorted(self.edge_dict.items(), key = lambda item: item[1], reverse = reverse)) #sorted의 결과는 list이다!
         # print(self.edge_dict)
 
 import cv2
@@ -110,23 +110,26 @@ height,width=im.shape # 288 * 384 = 110592
 #make image to graph
 for i in range(height-1):
     for j in range(width-1):
-        im_graph.add_edge((i,j),(i,j+1),cost=abs(int(im[i][j])-int(im[i][j+1])))
-        im_graph.add_edge((i,j),(i+1,j),cost=abs(int(im[i][j])-int(im[i+1][j])))
+        im_graph.add_edge((i,j),(i,j+1),cost=abs(int(im[i][j])-int(im[i][j+1]))) #horizontal
+        im_graph.add_edge((i,j),(i+1,j),cost=abs(int(im[i][j])-int(im[i+1][j]))) #vertical
 for i in range(height-1):
-    im_graph.add_edge((i, -1), (i+1, -1), cost=abs(int(im[i][-1]) - int(im[i+1][-1])))
+    im_graph.add_edge((i, width-1), (i+1, width-1), cost=abs(int(im[i][-1]) - int(im[i+1][-1])))
 for j in range(width-1):
-        im_graph.add_edge((-1,j),(-1,j+1),cost=abs(int(im[-1][j])-int(im[-1][j+1])))
+    im_graph.add_edge((height-1,j),(height-1,j+1),cost=abs(int(im[-1][j])-int(im[-1][j+1])))
 #len(edges)=2*(height-1)*(width-1)+height+width-2= 220512
 
+
 #make MST from graph
-im_graph.weight_sort()
+im_graph.weight_sort(True)
 edges=im_graph.get_edges()
 n=height*width
-print(edges[0],im_graph.get_weight(edges[0]))
-while len(edges)>n:
-    e=edges[0]
-    if im_graph.get_vertex(e[0]).get_degree()>1 and im_graph.get_vertex(e[1]).get_degree()>1:
-        im_graph.remove_edge(e[0],e[1])
-    edges=im_graph.get_edges()
-print('after',edges[0],im_graph.get_weight(edges[0]))
+e=edges.pop(-1)
+print(edges[0],im_graph.get_weight(edges[0]),edges[-1],im_graph.get_weight(edges[-1]),e,im_graph.get_weight(e))
+
+# while len(edges)>n:
+#     e=edges[0]
+#     if im_graph.get_vertex(e[0]).get_degree()>1 and im_graph.get_vertex(e[1]).get_degree()>1:
+#         im_graph.remove_edge(e[0],e[1])
+#     edges=im_graph.get_edges()
+# print('after',edges[0],im_graph.get_weight(edges[0]))
 #말도 안됨. 36분동안 실행안되는 거는 알고리즘에 문제 있다
