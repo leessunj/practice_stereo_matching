@@ -49,6 +49,9 @@ class Graph:
     def get_num_vertices(self):
         return self.num_vertices
 
+    def get_num_edges(self):
+        return len(self.edge_dict)
+
     def add_edge(self, frm, to, cost = 0):
         if frm not in self.vert_dict:
             self.add_vertex(frm)
@@ -115,23 +118,33 @@ class Graph:
 
         def add_edge_neighbors(nei_dict, e):
             for n in self.get_vertex(e[0]).get_connections():
+                if n.get_id()==e[1] or (n.get_id(),e[0]) in nei_dict:
+                    continue
                 nei_dict[(e[0], n.get_id())] = self.get_weight((e[0], n.get_id()))
             for n in self.get_vertex(e[1]).get_connections():
+                if n.get_id()==e[0] or (n.get_id(),e[1]) in nei_dict:
+                    continue
                 nei_dict[(e[1], n.get_id())] = self.get_weight((e[1], n.get_id()))
             return dict(sorted(nei_dict.items(), key=lambda item: item[1]))
 
         incident=add_edge_neighbors(incident,e)
 
+        print(f"MST: {MST.get_edges()}edges and {MST.get_num_vertices()} and incident: {incident}")
+
         n = MST.get_num_vertices()
         while n<self.num_vertices:
             edge=list(incident.keys())[0]
+            MST.add_edge(edge[0],edge[1],cost=incident[edge])
             del incident[edge]
-            MST.add_edge(edge[0],edge[1])
+            # print(f"incident list {incident}")
             if n<MST.get_num_vertices():
                 incident=add_edge_neighbors(incident,edge)
-                print(n)
-            else:
+                print()
+                # print(f"{edge} is inserted")
+            else:#이전보다 vertex가 증가하지 않았다(cycle)
                 MST.remove_edge(edge[0],edge[1])
+                continue
+            print(f"{edge}=>{MST.get_weight(edge)} *** {MST.get_weight((edge[0],edge[1]))} || type{type(edge)} & {type(MST.get_weight(edge))}")
             n=MST.get_num_vertices()
 
         return MST
@@ -162,7 +175,12 @@ for j in range(width-1):
 #make MST from graph
 mst=Graph()
 MST=im_graph.get_MST()
-print(MST.get_num_vertices(),len(MST.get_edges()))
+MST.weight_sort()
+n=MST.get_num_vertices()
+es=MST.get_edges()
+print()
+print("=====>")
+print(f"edges: {len(es)} vertices: {n} max_weight: {es[-1]}=>{MST.get_weight(es[-1])} min_weight: {es[0]}=>{MST.get_weight(es[0])}")
 
 
 # while len(edges)>n:
