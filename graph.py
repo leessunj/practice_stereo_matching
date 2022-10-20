@@ -10,7 +10,7 @@ class Vertex:
         self.adjacent[neighbor] = weight
 
     def get_connections(self):
-        return self.adjacent.keys()
+        return list(self.adjacent.keys())
 
     def get_id(self):
         return self.id
@@ -46,6 +46,9 @@ class Graph:
         else:
             return None
 
+    def get_num_vertices(self):
+        return self.num_vertices
+
     def add_edge(self, frm, to, cost = 0):
         if frm not in self.vert_dict:
             self.add_vertex(frm)
@@ -57,7 +60,7 @@ class Graph:
         self.vert_dict[to].add_neighbor(self.vert_dict[frm], cost)
 
     def get_vertices(self):
-        return self.vert_dict.keys()
+        return list(self.vert_dict.keys())
 
     def remove_edge(self,frm,to):
         if frm not in self.vert_dict:
@@ -78,7 +81,7 @@ class Graph:
             print("no",v)
             return
         self.num_vertices=self.num_vertices-1
-        neighbors=list(self.vert_dict[v].get_connections())
+        neighbors=self.vert_dict[v].get_connections()
         for n in neighbors:
             n_id=n.get_id()
             self.remove_edge(n_id,v)
@@ -90,6 +93,8 @@ class Graph:
     def get_weight(self,e):
         if e in self.edge_dict:
             return self.edge_dict[e]
+        elif (e[1],e[0]) in self.edge_dict:
+            return self.edge_dict[(e[1],e[0])]
         else:
             return None
 
@@ -100,9 +105,37 @@ class Graph:
         # print(self.edge_dict)
 
     def get_MST(self):
-        edges=self.edge_dict
-        e=list(edges.keys())[-1]
-        print("it's",e)
+        self.weight_sort()
+        e=self.get_edges()[0]
+        print("it's",e,type(e[0]),e[1],self.edge_dict[e])
+
+        MST=Graph()
+        MST.add_edge(e[0],e[1],cost=self.edge_dict[e])
+        incident={}
+
+        def add_edge_neighbors(nei_dict, e):
+            for n in self.get_vertex(e[0]).get_connections():
+                nei_dict[(e[0], n.get_id())] = self.get_weight((e[0], n.get_id()))
+            for n in self.get_vertex(e[1]).get_connections():
+                nei_dict[(e[1], n.get_id())] = self.get_weight((e[1], n.get_id()))
+            return dict(sorted(nei_dict.items(), key=lambda item: item[1]))
+
+        incident=add_edge_neighbors(incident,e)
+
+        n = MST.get_num_vertices()
+        while n<self.num_vertices:
+            edge=list(incident.keys())[0]
+            del incident[edge]
+            MST.add_edge(edge[0],edge[1])
+            if n<MST.get_num_vertices():
+                incident=add_edge_neighbors(incident,edge)
+                print(n)
+            else:
+                MST.remove_edge(edge[0],edge[1])
+            n=MST.get_num_vertices()
+
+        return MST
+
 
 
 
@@ -128,32 +161,8 @@ for j in range(width-1):
 
 #make MST from graph
 mst=Graph()
-im_graph.weight_sort(True)
-im_graph.get_MST()
-edges=im_graph.get_edges()
-n=height*width
-e=edges.pop(-1)
-v1=im_graph.get_vertex(e[0])
-v2=im_graph.get_vertex(e[1])
-mst.add_edge(v1,v2,im_graph.get_weight(e))
-candidates=[]
-for k in v1.get_connections():
-    candidates.append((v1.get_id(),k.get_id()))
-for k in v2.get_connections():
-    candidates.append((v2.get_id(),k.get_id()))
-print(candidates,len(candidates))
-
-def get_min_weight(g,subjects):
-    min_w=subjects[0]
-    min_i=0
-    for i in range(1,len(subjects)):
-        w=g.get_weight(subjects[i])
-        if w<min_w:
-            min_w=w
-            min_i=i
-        elif min_w==0:
-            return 0,min_i
-    return min_w,min_i
+MST=im_graph.get_MST()
+print(MST.get_num_vertices(),len(MST.get_edges()))
 
 
 # while len(edges)>n:
