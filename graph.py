@@ -174,7 +174,7 @@ for j in range(width-1):
 
 #make MST from graph
 mst=Graph()
-MST=im_graph.get_MST()
+MST=im_graph.get_MST() #실행시간 약 10분쯤
 MST.weight_sort()
 n=MST.get_num_vertices()
 es=MST.get_edges()
@@ -182,11 +182,8 @@ print()
 print("=====>")
 print(f"edges: {len(es)} vertices: {n} max_weight: {es[-1]}=>{MST.get_weight(es[-1])} min_weight: {es[0]}=>{MST.get_weight(es[0])}")
 
-
-# while len(edges)>n:
-#     e=edges[0]
-#     if im_graph.get_vertex(e[0]).get_degree()>1 and im_graph.get_vertex(e[1]).get_degree()>1:
-#         im_graph.remove_edge(e[0],e[1])
-#     edges=im_graph.get_edges()
-# print('after',edges[0],im_graph.get_weight(edges[0]))
-#말도 안됨. 36분동안 실행안되는 거는 알고리즘에 문제 있다
+#find shortest distance
+#find S(p,q)
+#find Cd
+#find CAd ~Fri(10/20)
+#non-local disparity refinement
