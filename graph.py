@@ -10,7 +10,7 @@ class Vertex:
         self.adjacent[neighbor] = weight
 
     def get_connections(self):
-        return list(self.adjacent.keys())
+        return list(self.adjacent.keys()) #vertex object list
 
     def get_id(self):
         return self.id
@@ -29,6 +29,7 @@ class Graph:
         self.vert_dict = {}
         self.edge_dict = {}
         self.num_vertices = 0
+        self.distance = {}
 
 
     def __iter__(self):
@@ -61,6 +62,7 @@ class Graph:
         self.edge_dict[(frm,to)] = cost
         self.vert_dict[frm].add_neighbor(self.vert_dict[to], cost)
         self.vert_dict[to].add_neighbor(self.vert_dict[frm], cost)
+        self.distance[(frm,to)] = 1
 
     def get_vertices(self):
         return list(self.vert_dict.keys())
@@ -73,8 +75,10 @@ class Graph:
 
         if (frm,to) in self.edge_dict:
             del self.edge_dict[(frm,to)]
+            del self.distance[(frm, to)]
         else:
             del self.edge_dict[(to,frm)]
+            del self.distance[(to,frm)]
 
         self.vert_dict[frm].remove_neighbor(self.vert_dict[to])
         self.vert_dict[to].remove_neighbor(self.vert_dict[frm])
@@ -133,26 +137,56 @@ class Graph:
 
         n = MST.get_num_vertices()
         while n<self.num_vertices:
-            edge=list(incident.keys())[0]
-            MST.add_edge(edge[0],edge[1],cost=incident[edge])
-            del incident[edge]
             # print(f"incident list {incident}")
+            edge=list(incident.keys())[0]
+
+            if (edge[0],edge[1]) in MST.edge_dict or (edge[1],edge[0]) in MST.edge_dict:
+                del incident[edge]
+                continue
+            else:
+                MST.add_edge(edge[0],edge[1],cost=incident[edge])
+            del incident[edge]
             if n<MST.get_num_vertices():
                 incident=add_edge_neighbors(incident,edge)
-                print()
-                # print(f"{edge} is inserted")
+                # print(f"added {edge}")
             else:#이전보다 vertex가 증가하지 않았다(cycle)
                 MST.remove_edge(edge[0],edge[1])
+                # print(f"removed {edge}")
                 continue
-            print(f"{edge}=>{MST.get_weight(edge)} *** {MST.get_weight((edge[0],edge[1]))} || type{type(edge)} & {type(MST.get_weight(edge))}")
-            n=MST.get_num_vertices()
+            n = MST.get_num_vertices()
+            #print(f"{n}: {edge}=>{MST.get_weight(edge)} *** {MST.get_weight((edge[0],edge[1]))} || type{type(edge)} & {type(MST.get_weight(edge))}") #{MST.get_weight(edge)} == {MST.get_weight((edge[0],edge[1]))
+            print(f"{n}:{MST.get_num_edges()} >>{MST.get_vertex(edge[0])}=>{len(MST.get_vertex(edge[0]).get_connections())} | {MST.get_vertex(edge[1])} ")
 
         return MST
+
+    def get_distance(self, v1, v2):
+        if v1==v2:
+            return 0
+        if (v1, v2) in self.distance:
+            return self.distance[(v1, v2)]
+        elif (v2, v1) in self.distance:
+            return self.distance[(v2, v1)]
+
+        togo = self.get_vertex(v1).get_connections()
+        print(f"{v1} neighbors {togo}")
+        visited = set()
+        dist=[]
+        for k in togo:
+            vk=k.get_id()
+            if v1<vk:
+                dist.append(self.get_distance(v1, vk) + self.get_distance(vk, v2))
+        if len(dist)<1:
+            print(f"NO neighbors between {v1} and {v2}")
+            return 999
+        self.distance[(v1,v2)]=min(dist)
+        return self.distance[(v1,v2)]
+
 
 
 
 
 import cv2
+import math
 import networkx as nx
 
 im = cv2.imread('tsukuba/scene1.row3.col1.ppm',0)  # left
@@ -181,9 +215,19 @@ es=MST.get_edges()
 print()
 print("=====>")
 print(f"edges: {len(es)} vertices: {n} max_weight: {es[-1]}=>{MST.get_weight(es[-1])} min_weight: {es[0]}=>{MST.get_weight(es[0])}")
+print(f"0,0~2,0: {MST.get_distance((0,0),(2,0))} ")
 
-#find shortest distance
 #find S(p,q)
+def similarity(p,q,sigma=1.0):
+    global MST
+    return math.exp(-MST.get_distance(p,q)/sigma)
 #find Cd
+def costAggregate(p,d):
+    return
+
+def cost(p,d):
+    return
+
+
 #find CAd ~Fri(10/20)
 #non-local disparity refinement
