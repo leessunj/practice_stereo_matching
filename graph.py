@@ -167,18 +167,29 @@ class Graph:
         elif (v2, v1) in self.distance:
             return self.distance[(v2, v1)]
 
-        togo = self.get_vertex(v1).get_connections()
-        print(f"{v1} neighbors {togo}")
-        visited = set()
-        dist=[]
-        for k in togo:
-            vk=k.get_id()
-            if v1<vk:
-                dist.append(self.get_distance(v1, vk) + self.get_distance(vk, v2))
-        if len(dist)<1:
-            print(f"NO neighbors between {v1} and {v2}")
-            return 999
-        self.distance[(v1,v2)]=min(dist)
+        visited = {self.get_vertex(v1)}
+        togo=self.get_vertex(v1).get_connections()
+        dist=1
+        last_vd=togo[0]
+        now=togo.pop(-1)
+        while now.get_id()!=v2 :
+            visited.add(now)
+            now_adj=[]
+            for n in now.get_connections():
+                if n not in visited:
+                    now_adj.append(n)
+            togo=now_adj+togo
+            if (v1,now.get_id()) not in self.distance:
+                self.distance[(v1,now.get_id())]=dist
+            print(f"{(v1,now.get_id())} is {dist} ")
+            if not togo:
+                print(f"No connection between {v1} and {v2}")
+                return 9999999
+            elif now==last_vd:
+                last_vd=togo[0]
+                dist+=1
+            now=togo.pop(-1)
+        self.distance[(v1,v2)]=dist
         return self.distance[(v1,v2)]
 
 
@@ -215,14 +226,17 @@ es=MST.get_edges()
 print()
 print("=====>")
 print(f"edges: {len(es)} vertices: {n} max_weight: {es[-1]}=>{MST.get_weight(es[-1])} min_weight: {es[0]}=>{MST.get_weight(es[0])}")
-print(f"0,0~2,0: {MST.get_distance((0,0),(2,0))} ")
+print(f"0,0~2,0: {MST.get_distance((0,0),(2,0))} vs {MST.get_distance((2,0),(0,0))}")
+print(f"0,0~2,1: {MST.get_distance((0,0),(2,1))} ")
+print(f"{MST.get_distance((0,0),(0,0))} | {MST.get_distance((0,0),(10,5))} {MST.get_distance((0,0),(1,0))}")
 
 #find S(p,q)
-def similarity(p,q,sigma=1.0):
+def similarity(p,q,sigma=0.1):
     global MST
     return math.exp(-MST.get_distance(p,q)/sigma)
 #find Cd
 def costAggregate(p,d):
+    #for all
     return
 
 def cost(p,d):
