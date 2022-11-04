@@ -221,122 +221,141 @@ for j in range(width-1):
 
 
 #make MST from graph
-MST=im2_graph.get_MST() #실행시간 약 10분쯤
-MST.weight_sort()
-
-sys.setrecursionlimit(12000)
-with open("MST2.pickle", "wb") as f:
-    pickle.dump(MST, f)  # 위에서 생성한 object를 list.pickle로 저장
-
-n=MST.get_num_vertices()
-es=MST.get_edges()
-print()
-print("=====>")
-print(f"edges: {len(es)} vertices: {n} max_weight: {es[-1]}=>{MST.get_weight(es[-1])} min_weight: {es[0]}=>{MST.get_weight(es[0])}")
-print(f"0,0~2,0: {MST.get_distance((0,0),(2,0))} vs {MST.get_distance((2,0),(0,0))}")
-print(f"0,0~2,1: {MST.get_distance((0,0),(2,1))} ")
-print(f"{MST.get_distance((0,0),(0,0))} | {MST.get_distance((0,0),(10,5))} {MST.get_distance((0,0),(1,0))}")
+# MST=im2_graph.get_MST() #실행시간 약 10분쯤
+# MST.weight_sort()
+#
+# sys.setrecursionlimit(12000)
+# with open("MST2.pickle", "wb") as f:
+#     pickle.dump(MST, f)  # 위에서 생성한 object를 list.pickle로 저장
+#
+# n=MST.get_num_vertices()
+# es=MST.get_edges()
+# print()
+# print("=====>")
+# print(f"edges: {len(es)} vertices: {n} max_weight: {es[-1]}=>{MST.get_weight(es[-1])} min_weight: {es[0]}=>{MST.get_weight(es[0])}")
+# print(f"0,0~2,0: {MST.get_distance((0,0),(2,0))} vs {MST.get_distance((2,0),(0,0))}")
+# print(f"0,0~2,1: {MST.get_distance((0,0),(2,1))} ")
+# print(f"{MST.get_distance((0,0),(0,0))} | {MST.get_distance((0,0),(10,5))} {MST.get_distance((0,0),(1,0))}")
 
 
 
 
 with open("MST1.pickle", "rb") as f:
-    MST = pickle.load(f)  # list.pickle 읽어서 출력 -> list 잘 불러와졌다.
-print(MST.get_num_vertices(),MST.get_num_edges())
-
+    MST_l = pickle.load(f)
+with open("MST2.pickle", "rb") as f:
+    MST_r = pickle.load(f)
 #find S(p,q)
-def similarity(p,q,sigma=0.12):
-    global MST
+def similarity(p,q,MST,sigma=0.12):
     return math.exp(-MST.get_distance(p,q)/sigma)
 #find Cd
-def cost(p,d):
+def cost_left(p,d):
+    global im,im2,width
+    if p[1]+d>=width:
+        return 255
+    return abs(int(im2[p[0]][p[1]-d])-int(im[p[0]][p[1]]))
+
+def cost_right(p,d):
     global im,im2,width
     if p[1]+d>=width:
         return 255
     return abs(int(im2[p[0]][p[1]])-int(im[p[0]][p[1]+d]))
 
-def costAggregate(p,d):
-    global im,height,width
-    result=cost(p,d)
+
+def costAggregation(MST,cost,max_d=12):
+    # find leaf nodes
+    leaves = []
     for i in range(height):
         for j in range(width):
-            if p==(i,j):
-                continue
-            q=(i,j)
-            result+=similarity(p,q)*cost(q,d)
-    print(f"fin_CA for {p},{d}")
-    return result
+            v = MST.get_vertex((i, j))
+            nb = v.get_connections()
+            if len(nb) == 1:
+                # leaves.append((i, j)) #tuple
+                leaves.append(v)  # vertex
+    print(f"leaves:{len(leaves)}")
 
-#find leaf nodes
-leaves=[]
-for i in range(height):
-    for j in range(width):
-        v = MST.get_vertex((i, j))
-        nb = v.get_connections()
-        if len(nb) == 1:
-            # leaves.append((i, j)) #tuple
-            leaves.append(v) #vertex
-print(f"leaves:{len(leaves)}")
-
-#find CAd
-CAd={}#(p,d)
-max_d=12
-disparity = []
-for i in range(height):
-    for j in range(width):
-        candidates=[]
-        for d in range(1,max_d+1):
-            CAd[((i,j), d)] = cost((i,j), d)
-#각 d에 대해 일단 CAd에 자기 cost만 넣어둠. leaf의 경우는 건들거 없고 그 위에 애들만 건들면 된다!
-root=Vertex(None)
-togo=[]
-visited=set(leaves)
-for v in leaves:
-    x=v.get_connections()
-    togo+=x
-    for d in range(1,max_d+1):
-        CAd[(x[0].get_id(),d)]+=similarity(v.get_id(),x[0].get_id())*CAd[(v.get_id(),d)]
-
-print("start-1st CA")
-while len(visited)<MST.get_num_vertices():
-    v=togo.pop(0)
-    x=v.get_connections()
-    for xi in x:
-        if xi not in visited:
+    # find CAd
+    CAd={}#(p,d)
+    for i in range(height):
+        for j in range(width):
             for d in range(1,max_d+1):
-                CAd[(xi.get_id(),d)]+=similarity(v.get_id(),xi.get_id())*CAd[(v.get_id(),d)]
-            togo.append(xi)
-    visited.add(v)
-    root=v
-print("fin-1st CA and start 2nd")
-togo=[root]
-while len(visited)>0:
-    p=togo.pop(0)
-    v=p.get_connections()
-    for vi in v:
-        if vi in visited:
-            for d in range(1,max_d+1):
-                S=similarity(p.get_id(),vi.get_id())
-                CAd[(vi.get_id(),d)]=S*CAd[(p.get_id(),d)]+(1-S**2)*CAd[(vi.get_id(),d)]
-            togo.append(vi)
-    visited.remove(p)
-
-print("fin-2nd CA")
-
-disparity=[]
-for i in range(height):
-    for j in range(width):
-        candidates=[]
+                CAd[((i,j), d)] = cost((i,j), d)
+    #각 d에 대해 일단 CAd에 자기 cost만 넣어둠. leaf의 경우는 건들거 없고 그 위에 애들만 건들면 된다!
+    root=Vertex(None)
+    togo=[]
+    visited=set(leaves)
+    for v in leaves:
+        x=v.get_connections()
+        togo+=x
         for d in range(1,max_d+1):
-            candidates.append(CAd[((i,j),d)])
-        disparity.append(candidates.index(min(candidates)))
-disparity = np.array(disparity)
-disparity=disparity/np.max(disparity)
-disparity.shape = (height, width)
-cv2.imshow("ds", disparity)
-cv2.waitKey(0)
+            CAd[(x[0].get_id(),d)]+=similarity(v.get_id(),x[0].get_id(),MST)*CAd[(v.get_id(),d)]
 
+    print("start-1st CA")
+    while len(visited)<MST.get_num_vertices():
+        v=togo.pop(0)
+        x=v.get_connections()
+        for xi in x:
+            if xi not in visited:
+                for d in range(1,max_d+1):
+                    CAd[(xi.get_id(),d)]+=similarity(v.get_id(),xi.get_id(),MST)*CAd[(v.get_id(),d)]
+                togo.append(xi)
+        visited.add(v)
+        root=v
+    print("fin-1st CA and start 2nd")
+    togo=[root]
+    while len(visited)>0:
+        p=togo.pop(0)
+        v=p.get_connections()
+        for vi in v:
+            if vi in visited:
+                for d in range(1,max_d+1):
+                    S=similarity(p.get_id(),vi.get_id(),MST)
+                    CAd[(vi.get_id(),d)]=S*CAd[(p.get_id(),d)]+(1-S**2)*CAd[(vi.get_id(),d)]
+                togo.append(vi)
+        visited.remove(p)
 
+    print("fin-2nd CA")
+    return CAd
 
+def disparityMap(CAd,max_d=12):
+    global height,width
+    disparity = []
+    for i in range(height):
+        for j in range(width):
+            candidates = []
+            for d in range(1, max_d + 1):
+                candidates.append(CAd[((i, j), d)])
+            disparity.append(candidates.index(min(candidates)))
+    disparity = np.array(disparity)
+    # disparity = disparity / np.max(disparity)
+    disparity.shape = (height, width)
+    return disparity
 
 #non-local disparity refinement
+max_d=12
+CAd_l = costAggregation(MST_l, cost_left,max_d=max_d)
+dis_l=disparityMap(CAd_l,max_d=max_d)
+CAd_r = costAggregation(MST_r, cost_right,max_d=max_d)
+dis_r=disparityMap(CAd_r,max_d=max_d)
+
+def new_cost(p,d):
+    if dis_l[p[0]][p[1]] == dis_r[p[0]][p[1]] and dis_l[p[0]][p[1]] > 0:
+        return abs(d - dis_l[p[0]][p[1]])
+    else:
+        return 0
+
+# new_c={}
+# for i in range(height):
+#     for j in range(width):
+#         for d in range(1,max_d+1):
+#             if dis_l[i][j]-dis_r[i][j]==0 and dis_l[i][j]>0:
+#                 new_c[((i, j), d)] = abs(d-dis_l[i][j]*255)
+#             else:
+#                 new_c[((i, j), d)] = 0
+
+CAd=costAggregation(MST_l,new_cost,max_d=max_d)
+disparity=disparityMap(CAd,max_d=max_d)
+disparity=disparity/np.max(disparity)
+# cv2.imshow("dsl", dis_l)
+# cv2.imshow("dsr", dis_r)
+cv2.imshow("ds", disparity)
+cv2.waitKey(0)
