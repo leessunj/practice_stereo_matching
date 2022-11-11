@@ -245,12 +245,12 @@ with open("MST1.pickle", "rb") as f:
 with open("MST2.pickle", "rb") as f:
     MST_r = pickle.load(f)
 #find S(p,q)
-def similarity(p,q,MST,sigma=0.12):
+def similarity(p,q,MST,sigma=2.):
     return math.exp(-MST.get_distance(p,q)/sigma)
 #find Cd
 def cost_left(p,d):
     global im,im2,width
-    if p[1]+d>=width:
+    if p[1]-d<0:
         return 255
     return abs(int(im2[p[0]][p[1]-d])-int(im[p[0]][p[1]]))
 
@@ -331,13 +331,44 @@ def disparityMap(CAd,max_d=12):
     return disparity
 
 #non-local disparity refinement
-max_d=12
+max_d=14
 CAd_l = costAggregation(MST_l, cost_left,max_d=max_d)
 dis_l=disparityMap(CAd_l,max_d=max_d)
 CAd_r = costAggregation(MST_r, cost_right,max_d=max_d)
 dis_r=disparityMap(CAd_r,max_d=max_d)
+cv2.imshow("l",dis_l/np.max(dis_l))
+cv2.imshow("r",dis_r/np.max(dis_r))
+
+check=[]
+for i in range(height):
+    for j in range(width):
+        if dis_l[i][j]==dis_r[i][j]:
+            check.append(dis_r[i][j])
+        elif dis_l[i][j]==0:
+            check.append(dis_r[i][j])
+        elif dis_r[i][j]==0:
+            check.append(dis_l[i][j])
+        else:
+            check.append((dis_l[i][j]+dis_r[i][j])/2)
+check=np.array(check)
+check.shape=(height,width)
+cv2.imshow("check",check/np.max(check))
+
+'''
+check=[]
+for i in range(height):
+    for j in range(width):
+        if dis_l[i][j]==dis_r[i][j]:
+            check.append(dis_r[i][j])
+        else:
+            check.append(0)
+check=np.array(check)
+check.shape=(height,width)
+cv2.imshow("00",check/np.max(check))
+'''
 
 def new_cost(p,d):
+    global dis_r,dis_l
     if dis_l[p[0]][p[1]] == dis_r[p[0]][p[1]] and dis_l[p[0]][p[1]] > 0:
         return abs(d - dis_l[p[0]][p[1]])
     else:
