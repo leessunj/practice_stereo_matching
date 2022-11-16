@@ -245,7 +245,8 @@ with open("MST1.pickle", "rb") as f:
 with open("MST2.pickle", "rb") as f:
     MST_r = pickle.load(f)
 #find S(p,q)
-def similarity(p,q,MST,sigma=2.):
+def similarity(p,q,MST,sigma=0.1
+               ):
     return math.exp(-MST.get_distance(p,q)/sigma)
 #find Cd
 def cost_left(p,d):
@@ -367,26 +368,82 @@ check.shape=(height,width)
 cv2.imshow("00",check/np.max(check))
 '''
 
-def new_cost(p,d):
+
+# median filter 해보기!!!! 과연~~~~!!!
+# def median_filter(img, filter_size=(3, 3), stride=1):
+#     img_shape = np.shape(img)
+#
+#     result_shape = tuple(np.int64(
+#         (np.array(img_shape) - np.array(filter_size)) / stride + 1
+#     ))
+#
+#     result = np.zeros(result_shape)
+#
+#     for h in range(0, result_shape[0], stride):
+#         for w in range(0, result_shape[1], stride):
+#             tmp = img[h:h + filter_size[0], w:w + filter_size[1]]
+#             tmp = np.sort(tmp.ravel())
+#             result[h, w] = tmp[int(filter_size[0] * filter_size[1] / 2)]
+#
+#     return result
+#
+#
+# dis_r=median_filter(dis_r)
+# dis_l =median_filter(dis_l)
+
+def new_cost_l(p, d):
     global dis_r,dis_l
     if dis_l[p[0]][p[1]] == dis_r[p[0]][p[1]] and dis_l[p[0]][p[1]] > 0:
+        return abs(d - dis_l[p[0]][p[1]])
+#    if abs(dis_l[p[0]][p[1]]- dis_r[p[0]][p[1]])<3 and dis_l[p[0]][p[1]] > 0:
+ #       return abs(d - dis_l[p[0]][p[1]])
+    else:
+        return 0
+def new_cost_r(p, d):
+    global dis_r,dis_l
+    # if dis_l[p[0]][p[1]] == dis_r[p[0]][p[1]] and dis_r[p[0]][p[1]] > 0:
+    #     return abs(d - dis_r[p[0]][p[1]])
+    if abs(dis_l[p[0]][p[1]]- dis_r[p[0]][p[1]])<2 and dis_l[p[0]][p[1]] > 0:
         return abs(d - dis_l[p[0]][p[1]])
     else:
         return 0
 
-# new_c={}
-# for i in range(height):
-#     for j in range(width):
-#         for d in range(1,max_d+1):
-#             if dis_l[i][j]-dis_r[i][j]==0 and dis_l[i][j]>0:
-#                 new_c[((i, j), d)] = abs(d-dis_l[i][j]*255)
-#             else:
-#                 new_c[((i, j), d)] = 0
+disp = []
+for i in range(height):
+    for j in range(width):
+        candidates = []
+        for d in range(1, max_d + 1):
+            candidates.append(new_cost_l((i, j), d))
+        disp.append(candidates.index(min(candidates)))
+disp = np.array(disp)
+# disparity = disparity / np.max(disparity)
+disp.shape = (height, width)
+disparity=disp/np.max(disp)
+cv2.imshow("wta", disparity)
 
-CAd=costAggregation(MST_l,new_cost,max_d=max_d)
-disparity=disparityMap(CAd,max_d=max_d)
-disparity=disparity/np.max(disparity)
+
+
+CAd=costAggregation(MST_l, new_cost_l, max_d=max_d)
+disparity_l=disparityMap(CAd,max_d=max_d)
+cv2.imshow("dsl", disparity_l/np.max(disparity_l))
+#
+# CAd=costAggregation(MST_r, new_cost_r, max_d=max_d)
+# disparity_r=disparityMap(CAd,max_d=max_d)
+# cv2.imshow("dsr", disparity_r/np.max(disparity_r))
+
+#
+# def more_new_cost(p,d):
+#     global disparity_r,disparity_l
+#     if disparity_r[p[0]][p[1]] == disparity_l[p[0]][p[1]] and disparity_l[p[0]][p[1]] > 0:
+#         return abs(d - disparity_l[p[0]][p[1]])
+#  #   if abs(dis_l[p[0]][p[1]]- dis_r[p[0]][p[1]])<3 and dis_l[p[0]][p[1]] > 0:
+#  #       return abs(d - dis_l[p[0]][p[1]])
+#     else:
+#         return 0
+#
+# CAd=costAggregation(MST_l,more_new_cost,max_d=max_d)
+# disparity=disparityMap(CAd,max_d=max_d)
+# cv2.imshow("more", disparity/np.max(disparity))
 # cv2.imshow("dsl", dis_l)
 # cv2.imshow("dsr", dis_r)
-cv2.imshow("ds", disparity)
 cv2.waitKey(0)
