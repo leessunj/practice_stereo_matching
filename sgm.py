@@ -66,14 +66,14 @@ def costvolume(maxd=15):
     disparity = np.array(disparity)
     disparity.shape = (h, w,maxd)
 
-    d=[]
-    for i in range(h):
-        for j in range(w):
-            d.append(np.argmin(disparity[i,j,:]))
-    d = np.array(d)
-    d.shape = (h, w)
-    cv2.imshow('cv',d/np.max(d))
-    cv2.waitKey(0)
+    # d=[]
+    # for i in range(h):
+    #     for j in range(w):
+    #         d.append(np.argmin(disparity[i,j,:]))
+    # d = np.array(d)
+    # d.shape = (h, w)
+    # cv2.imshow('cv',d/np.max(d))
+    # cv2.waitKey(0)
 
     return disparity  # / np.max(disparity)
 
@@ -95,7 +95,7 @@ def get_lr(cv, p, r): #d별 lr
     prev_i,dir_range = get_direction_pairs(p, r)
     prev = cv[prev_i[0],prev_i[1],:]
     for e in dir_range:
-        cur=cv[e[0],cv[1],:]
+        cur=cv[e[0],e[1],:].astype('int64')
         ub=min(prev)
         cur[0]+=min(prev[1]+P1,ub+P2)
         for i in range(1,maxd-1):
@@ -108,13 +108,13 @@ cv=costvolume(maxd)
 
 def agg_cost_disp(p): #s를 통해 구한 d
     global cv
-    directions=[(0,1),(1,0)]#,(1,1),(-1,1),]#(1,2),(2,1),(-2,1),(-1,2)]
+    directions=[(0,1),(1,0),(1,1),(-1,1),]#(1,2),(2,1),(-2,1),(-1,2)]
     s=np.zeros(maxd)
     for r in directions:
         s+=get_lr(cv, p, r)
         r = (-r[0], -r[1])
         s+=get_lr(cv, p, r)
-    return min(s)
+    return np.argmin(s)
 
 h,w=im.shape
 disparity=[]
@@ -125,6 +125,7 @@ for i in range(h):
 disparity=np.array(disparity)
 disparity.shape=(h,w)
 cv2.imshow("dis",disparity/np.max(disparity))
+cv2.waitKey(0)
 
 
 
