@@ -9,6 +9,10 @@ igt = cv2.imread('tsukuba/truedisp.row3.col3.pgm',0)
 P1=5
 P2=150
 maxd=15
+
+a=[1,2,3]
+print(np.subtract(a,1))
+
 # r=(1,1)
 # p=(3,4)
 # print(r+p)
@@ -61,9 +65,21 @@ def costvolume(maxd=15):
             disparity+=d
     disparity = np.array(disparity)
     disparity.shape = (h, w,maxd)
+
+    d=[]
+    for i in range(h):
+        for j in range(w):
+            d.append(np.argmin(disparity[i,j,:]))
+    d = np.array(d)
+    d.shape = (h, w)
+    cv2.imshow('cv',d/np.max(d))
+    cv2.waitKey(0)
+
     return disparity  # / np.max(disparity)
 
-print(costvolume())
+
+
+
 def get_direction_pairs(p,r):
     dir_range = []
     y, x = p
@@ -71,45 +87,40 @@ def get_direction_pairs(p,r):
         dir_range.append(((y, x)))
         y += r[0]
         x += r[1]
-    return dir_range
+    return (y,x),dir_range[::-1]
 
 
-def get_s(cv, p, r, d):
-    dir_range = get_direction_pairs(p, r)
-    if len(dir_range)<1:
-        return cv[p[0]][p[1]][d]
-    prev = dir_range.pop(-1)
-    s = cv[prev[0]][prev[1]][d]
-    for i in dir_range.reverse():
-        ub = min(cv[prev[0], prev[1], d + 2:], cv[prev[0], prev[1], :d - 1])
-        lr = min(cv[prev[0]][prev[1]][d], cv[prev[0]][prev[1]][d - 1] + P1, cv[prev[0]][prev[1]][d + 1] + P1, ub + P2)
-        lr = lr+cv[i[0]][i[1]][d]-ub
-        prev=i
-        s+=lr
-    return s
+def get_lr(cv, p, r): #d별 lr
+    global maxd
+    prev_i,dir_range = get_direction_pairs(p, r)
+    prev = cv[prev_i[0],prev_i[1],:]
+    for e in dir_range:
+        cur=cv[e[0],cv[1],:]
+        ub=min(prev)
+        cur[0]+=min(prev[1]+P1,ub+P2)
+        for i in range(1,maxd-1):
+            cur[i]+=min(prev[i],prev[i-1]+P1,prev[i+1]+P1,ub+P2)
+        cur[-1]+=min(prev[-2]+P1,ub+P2)
+        prev=np.subtract(cur,ub)
+    return prev
 
-def agg_cost(p,d):
-    cv=costvolume(maxd)
+cv=costvolume(maxd)
+
+def agg_cost_disp(p): #s를 통해 구한 d
+    global cv
     directions=[(0,1),(1,0)]#,(1,1),(-1,1),]#(1,2),(2,1),(-2,1),(-1,2)]
-    s=0
+    s=np.zeros(maxd)
     for r in directions:
-        s+=get_s(cv, p, r, d - 1)
+        s+=get_lr(cv, p, r)
         r = (-r[0], -r[1])
-        s+=get_s(cv, p, r, d - 1)
-    return s
+        s+=get_lr(cv, p, r)
+    return min(s)
 
 h,w=im.shape
 disparity=[]
 for i in range(h):
     for j in range(w):
-        idx=1
-        mins=agg_cost((i,j),1)
-        for d in range(2,maxd):
-            t=agg_cost((i,j),d)
-            if t<mins:
-                mins=t
-                idx=d
-        disparity.append(idx)
+        disparity.append(agg_cost_disp((i,j)))
         print(i,j)
 disparity=np.array(disparity)
 disparity.shape=(h,w)
